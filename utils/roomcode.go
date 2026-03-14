@@ -4,7 +4,7 @@ import "math/rand"
 
 const (
 	codeChars  = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-	codeLength = 6
+	codeLength = 5
 )
 
 func GenerateRoomCode(exists func(string) bool) string {
