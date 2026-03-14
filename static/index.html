@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Annonymity - Test Client</title>
+<style>
+  :root { --bg: #0f0f1a; --card: #1a1a2e; --accent: #e94560; --accent2: #0f3460; --text: #eee; --muted: #888; --green: #4ecca3; --gold: #ffd700; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+  h1 { text-align: center; font-size: 2rem; margin: 20px 0; background: linear-gradient(135deg, var(--accent), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  h2 { font-size: 1.1rem; color: var(--accent); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .panel { background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid #2a2a4a; }
+  .full { grid-column: 1 / -1; }
+  input, button, textarea { font-family: inherit; font-size: 0.95rem; border-radius: 8px; border: none; padding: 10px 16px; }
+  input, textarea { background: #2a2a4a; color: var(--text); width: 100%; margin-bottom: 10px; }
+  input:focus, textarea:focus { outline: 2px solid var(--accent); }
+  button { background: var(--accent); color: white; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+  button:hover { filter: brightness(1.2); transform: translateY(-1px); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  button.secondary { background: var(--accent2); }
+  button.green { background: var(--green); color: #000; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .btn-row button { flex: 1; min-width: 120px; }
+  #log { background: #0a0a15; border-radius: 8px; padding: 12px; height: 250px; overflow-y: auto; font-family: 'Fira Code', monospace; font-size: 0.8rem; line-height: 1.5; border: 1px solid #2a2a4a; }
+  .log-entry { padding: 2px 0; border-bottom: 1px solid #1a1a2e; }
+  .log-entry.sent { color: #4ecca3; }
+  .log-entry.received { color: #e0e0ff; }
+  .log-entry.error { color: #e94560; }
+  .log-entry .type { font-weight: bold; }
+  .status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+  .status.connected { background: #4ecca322; color: var(--green); }
+  .status.disconnected { background: #e9456022; color: var(--accent); }
+  #players-list { list-style: none; }
+  #players-list li { padding: 6px 10px; margin: 4px 0; background: #2a2a4a; border-radius: 6px; display: flex; justify-content: space-between; }
+  #players-list .host { color: var(--gold); }
+  #answers-list { list-style: none; }
+  #answers-list li { padding: 10px; margin: 6px 0; background: #2a2a4a; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
+  #answers-list li:hover { border-color: var(--accent); }
+  #answers-list li.selected { border-color: var(--green); background: #4ecca315; }
+  #results-list { list-style: none; }
+  #results-list li { padding: 10px; margin: 6px 0; background: #2a2a4a; border-radius: 8px; }
+  #results-list li.winner { background: linear-gradient(135deg, #ffd70022, #e9456022); border: 1px solid var(--gold); }
+  .question-display { background: linear-gradient(135deg, var(--accent2), #1a1a2e); padding: 20px; border-radius: 12px; text-align: center; font-size: 1.2rem; margin: 12px 0; font-style: italic; }
+  .score-badge { background: var(--gold); color: #000; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; font-weight: bold; }
+  .timer { font-size: 1.5rem; font-weight: bold; text-align: center; color: var(--accent); }
+  .hidden { display: none !important; }
+  #game-phase { font-size: 0.9rem; padding: 8px 16px; background: var(--accent2); border-radius: 20px; text-align: center; margin: 10px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>ANNONYMITY</h1>
+
+  <!-- Connection Panel -->
+  <div class="panels" id="setup-panels">
+    <div class="panel">
+      <h2>Create Room</h2>
+      <input id="host-name" placeholder="Your name" maxlength="30">
+      <button onclick="createRoom()">Create Room</button>
+    </div>
+    <div class="panel">
+      <h2>Join Room</h2>
+      <input id="join-code" placeholder="Room code (e.g. XKDF42)" maxlength="6" style="text-transform:uppercase">
+      <input id="join-name" placeholder="Your name" maxlength="30">
+      <button onclick="joinRoom()">Join Room</button>
+    </div>
+  </div>
+
+  <!-- Game Panel -->
+  <div id="game-panels" class="hidden">
+    <div class="panels">
+      <div class="panel">
+        <h2>Room: <span id="room-code">-</span></h2>
+        <p>Your ID: <code id="my-id" style="font-size:0.7rem">-</code></p>
+        <p>Status: <span id="conn-status" class="status disconnected">Disconnected</span></p>
+        <div id="game-phase" class="hidden">Phase: <span id="phase-text">-</span></div>
+        <div class="btn-row" style="margin-top:12px">
+          <button class="green" id="start-btn" onclick="startGame()" disabled>Start Game</button>
+          <button class="secondary" onclick="disconnect()">Leave</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Players (<span id="player-count">0</span>)</h2>
+        <ul id="players-list"></ul>
+      </div>
+    </div>
+
+    <!-- Question Display -->
+    <div id="question-panel" class="panel full hidden">
+      <div class="question-display" id="question-text"></div>
+      <div class="timer" id="timer-display"></div>
+    </div>
+
+    <!-- Answer Panel -->
+    <div id="answer-panel" class="panel full hidden">
+      <h2>Your Answer</h2>
+      <textarea id="answer-input" rows="3" maxlength="300" placeholder="Type your funniest answer..."></textarea>
+      <button onclick="submitAnswer()" id="submit-answer-btn">Submit Answer</button>
+      <p id="answer-status" style="margin-top:8px;color:var(--muted)"></p>
+    </div>
+
+    <!-- Voting Panel -->
+    <div id="voting-panel" class="panel full hidden">
+      <h2>Vote for the Funniest Answer</h2>
+      <ul id="answers-list"></ul>
+      <button onclick="submitVote()" id="submit-vote-btn" disabled>Submit Vote</button>
+      <p id="vote-status" style="margin-top:8px;color:var(--muted)"></p>
+    </div>
+
+    <!-- Results Panel -->
+    <div id="results-panel" class="panel full hidden">
+      <h2>Round Results</h2>
+      <ul id="results-list"></ul>
+      <h2 style="margin-top:16px">Scoreboard</h2>
+      <ul id="scores-list" style="list-style:none"></ul>
+    </div>
+
+    <!-- Game Over Panel -->
+    <div id="gameover-panel" class="panel full hidden">
+      <h2 style="color:var(--gold);font-size:1.5rem;text-align:center">GAME OVER</h2>
+      <ul id="leaderboard" style="list-style:none"></ul>
+      <div id="mvp-display" style="text-align:center;margin-top:16px;padding:16px;background:#ffd70015;border-radius:12px"></div>
+    </div>
+  </div>
+
+  <!-- Event Log -->
+  <div class="panel full" style="margin-top:16px">
+    <h2>Event Log</h2>
+    <div id="log"></div>
+  </div>
+</div>
+
+<script>
+let ws = null;
+let myPlayerId = null;
+let myRoomCode = null;
+let isHost = false;
+let selectedVote = null;
+let timerInterval = null;
+
+const API = `${location.protocol}//${location.host}`;
+const WS_URL = `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`;
+
+function log(type, direction, data) {
+  const el = document.getElementById('log');
+  const entry = document.createElement('div');
+  entry.className = `log-entry ${direction}`;
+  const time = new Date().toLocaleTimeString();
+  entry.innerHTML = `<span style="color:var(--muted)">[${time}]</span> <span class="type">${direction === 'sent' ? '→' : '←'} ${type}</span> ${JSON.stringify(data).substring(0, 200)}`;
+  el.appendChild(entry);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function createRoom() {
+  const name = document.getElementById('host-name').value.trim();
+  if (!name) return alert('Enter your name');
+  try {
+    const res = await fetch(`${API}/api/rooms`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ host_name: name })
+    });
+    const data = await res.json();
+    if (!res.ok) return alert(data.error);
+    log('create_room', 'received', data);
+    myPlayerId = data.host_player_id;
+    myRoomCode = data.room_code;
+    isHost = true;
+    connectWS(data.room_code, null, data.host_player_id);
+  } catch (e) { alert('Failed to create room: ' + e.message); }
+}
+
+function joinRoom() {
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  const name = document.getElementById('join-name').value.trim();
+  if (!code || !name) return alert('Enter room code and name');
+  myRoomCode = code;
+  connectWS(code, name, null);
+}
+
+function connectWS(roomCode, name, playerId) {
+  let url = `${WS_URL}?room=${roomCode}`;
+  if (playerId) url += `&player_id=${playerId}`;
+  if (name) url += `&name=${encodeURIComponent(name)}`;
+
+  ws = new WebSocket(url);
+  ws.onopen = () => {
+    document.getElementById('conn-status').textContent = 'Connected';
+    document.getElementById('conn-status').className = 'status connected';
+    document.getElementById('setup-panels').classList.add('hidden');
+    document.getElementById('game-panels').classList.remove('hidden');
+    document.getElementById('room-code').textContent = roomCode;
+  };
+  ws.onclose = (e) => {
+    document.getElementById('conn-status').textContent = 'Disconnected';
+    document.getElementById('conn-status').className = 'status disconnected';
+    log('close', 'error', { code: e.code, reason: e.reason });
+  };
+  ws.onerror = () => log('error', 'error', {});
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    log(msg.type, 'received', msg.payload);
+    handleMessage(msg.type, msg.payload);
+  };
+}
+
+function send(type, payload = {}) {
+  if (!ws || ws.readyState !== 1) return;
+  const msg = { type, payload };
+  ws.send(JSON.stringify(msg));
+  log(type, 'sent', payload);
+}
+
+function disconnect() {
+  if (ws) ws.close();
+  document.getElementById('setup-panels').classList.remove('hidden');
+  document.getElementById('game-panels').classList.add('hidden');
+  hideAllGamePanels();
+}
+
+function startGame() { send('start_game'); }
+function submitAnswer() {
+  const text = document.getElementById('answer-input').value.trim();
+  if (!text) return;
+  send('submit_answer', { text });
+  document.getElementById('submit-answer-btn').disabled = true;
+}
+function submitVote() {
+  if (!selectedVote) return;
+  send('submit_vote', { voted_for_player_id: selectedVote });
+  document.getElementById('submit-vote-btn').disabled = true;
+}
+
+function hideAllGamePanels() {
+  ['question-panel','answer-panel','voting-panel','results-panel','gameover-panel'].forEach(id =>
+    document.getElementById(id).classList.add('hidden'));
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+function updatePlayers(players) {
+  const list = document.getElementById('players-list');
+  list.innerHTML = '';
+  document.getElementById('player-count').textContent = players.length;
+  players.forEach(p => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="${p.is_host ? 'host' : ''}">${p.name} ${p.is_host ? '👑' : ''} ${p.id === myPlayerId ? '(You)' : ''}</span><span class="score-badge">${p.score}</span>`;
+    list.appendChild(li);
+  });
+}
+
+function startTimer(seconds) {
+  if (timerInterval) clearInterval(timerInterval);
+  let remaining = seconds;
+  const el = document.getElementById('timer-display');
+  el.textContent = remaining + 's';
+  timerInterval = setInterval(() => {
+    remaining--;
+    el.textContent = remaining + 's';
+    if (remaining <= 0) clearInterval(timerInterval);
+  }, 1000);
+}
+
+function setPhase(text) {
+  document.getElementById('game-phase').classList.remove('hidden');
+  document.getElementById('phase-text').textContent = text;
+}
+
+function handleMessage(type, p) {
+  switch (type) {
+    case 'connected':
+      myPlayerId = p.player_id;
+      document.getElementById('my-id').textContent = p.player_id;
+      updatePlayers(p.room_state.players);
+      isHost = p.room_state.host_id === p.player_id;
+      document.getElementById('start-btn').disabled = !isHost;
+      break;
+
+    case 'player_joined':
+      { const list = document.getElementById('players-list');
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${p.player.name}</span><span class="score-badge">0</span>`;
+        list.appendChild(li);
+        document.getElementById('player-count').textContent = p.player_count; }
+      break;
+
+    case 'player_left':
+      document.getElementById('player-count').textContent = p.player_count;
+      break;
+
+    case 'game_started':
+      setPhase('Game Started!');
+      document.getElementById('start-btn').disabled = true;
+      updatePlayers(p.players);
+      break;
+
+    case 'new_round':
+      hideAllGamePanels();
+      setPhase(`Round ${p.round_number}/${p.total_rounds} — Answering`);
+      document.getElementById('question-panel').classList.remove('hidden');
+      document.getElementById('answer-panel').classList.remove('hidden');
+      document.getElementById('question-text').textContent = p.question;
+      document.getElementById('answer-input').value = '';
+      document.getElementById('submit-answer-btn').disabled = false;
+      document.getElementById('answer-status').textContent = '';
+      startTimer(p.time_limit_sec);
+      break;
+
+    case 'answer_submitted':
+      document.getElementById('answer-status').textContent = `${p.answers_count}/${p.total_players} answered`;
+      break;
+
+    case 'voting_start':
+      hideAllGamePanels();
+      setPhase(`Round ${p.round_number} — Voting`);
+      document.getElementById('question-panel').classList.remove('hidden');
+      document.getElementById('voting-panel').classList.remove('hidden');
+      document.getElementById('question-text').textContent = p.question;
+      selectedVote = null;
+      document.getElementById('submit-vote-btn').disabled = true;
+      document.getElementById('vote-status').textContent = '';
+      startTimer(p.time_limit_sec);
+      const aList = document.getElementById('answers-list');
+      aList.innerHTML = '';
+      p.answers.forEach(a => {
+        if (a.player_id === myPlayerId) return;
+        const li = document.createElement('li');
+        li.textContent = a.text;
+        li.onclick = () => {
+          aList.querySelectorAll('li').forEach(x => x.classList.remove('selected'));
+          li.classList.add('selected');
+          selectedVote = a.player_id;
+          document.getElementById('submit-vote-btn').disabled = false;
+        };
+        aList.appendChild(li);
+      });
+      break;
+
+    case 'vote_submitted':
+      document.getElementById('vote-status').textContent = `${p.votes_count}/${p.total_players} voted`;
+      break;
+
+    case 'round_results':
+      hideAllGamePanels();
+      setPhase(`Round ${p.round_number} — Results`);
+      document.getElementById('results-panel').classList.remove('hidden');
+      const rList = document.getElementById('results-list');
+      rList.innerHTML = '';
+      p.results.forEach(r => {
+        const li = document.createElement('li');
+        li.className = r.is_winner ? 'winner' : '';
+        li.innerHTML = `<strong>${r.player_name}</strong>: "${r.answer_text}" <br><span style="color:var(--muted)">${r.vote_count} vote(s) ${r.voters.length ? 'from ' + r.voters.join(', ') : ''}</span> ${r.is_winner ? ' 🏆' : ''}`;
+        rList.appendChild(li);
+      });
+      const sList = document.getElementById('scores-list');
+      sList.innerHTML = '';
+      p.scores.forEach(s => {
+        const li = document.createElement('li');
+        li.style.cssText = 'padding:6px 10px;margin:4px 0;background:#2a2a4a;border-radius:6px;display:flex;justify-content:space-between';
+        li.innerHTML = `<span>${s.name} ${s.player_id === myPlayerId ? '(You)' : ''}</span><span>+${s.round_points} → <span class="score-badge">${s.total_score}</span></span>`;
+        sList.appendChild(li);
+      });
+      break;
+
+    case 'game_over':
+      hideAllGamePanels();
+      setPhase('Game Over!');
+      document.getElementById('gameover-panel').classList.remove('hidden');
+      const lb = document.getElementById('leaderboard');
+      lb.innerHTML = '';
+      const medals = ['🥇', '🥈', '🥉'];
+      p.leaderboard.forEach((e, i) => {
+        const li = document.createElement('li');
+        li.style.cssText = 'padding:12px;margin:6px 0;background:#2a2a4a;border-radius:8px;display:flex;justify-content:space-between;font-size:1.1rem';
+        if (i === 0) li.style.background = 'linear-gradient(135deg, #ffd70022, #e9456022)';
+        li.innerHTML = `<span>${medals[i] || '#' + e.rank} ${e.name}</span><span class="score-badge" style="font-size:1rem">${e.total_score}</span>`;
+        lb.appendChild(li);
+      });
+      document.getElementById('mvp-display').innerHTML = `<span style="font-size:2rem">🏆</span><br><strong>MVP: ${p.mvp.name}</strong><br>${p.mvp.total_score} points · ${p.mvp.rounds_won} rounds won`;
+      break;
+
+    case 'error':
+      alert(`Error [${p.code}]: ${p.message}`);
+      break;
+
+    case 'kicked':
+      alert('You were kicked: ' + p.reason);
+      disconnect();
+      break;
+
+    case 'settings_updated':
+      break;
+
+    case 'emoji_reaction':
+      break;
+
+    case 'pong':
+      break;
+  }
+}
+</script>
+</body>
+</html>
