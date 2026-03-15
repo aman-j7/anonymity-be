@@ -7,8 +7,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"annonymity/models"
-	"annonymity/store"
+	"anonymity/models"
+	"anonymity/store"
 )
 
 type HTTPHandler struct {
@@ -21,7 +21,7 @@ func NewHTTPHandler(s *store.GameStore) *HTTPHandler {
 }
 
 type CreateRoomRequest struct {
-	HostName string              `json:"host_name"`
+	HostName string               `json:"host_name"`
 	Settings *models.RoomSettings `json:"settings,omitempty"`
 }
 

@@ -8,10 +8,10 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/cors"
 
-	"annonymity/config"
-	"annonymity/game"
-	"annonymity/handlers"
-	"annonymity/store"
+	"anonymity/config"
+	"anonymity/game"
+	"anonymity/handlers"
+	"anonymity/store"
 )
 
 func main() {
@@ -46,7 +46,7 @@ func main() {
 	})
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
-	log.Printf("=== Annonymity Server ===")
+	log.Printf("=== Anonymity Server ===")
 	log.Printf("HTTP server starting on :%s", cfg.Port)
 	log.Printf("Test client: http://localhost:%s", cfg.Port)
 	log.Printf("Health check: http://localhost:%s/api/health", cfg.Port)
