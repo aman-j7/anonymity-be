@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"annonymity/models"
+	"anonymity/models"
 )
 
 func SendToPlayer(p *models.Player, msgType string, payload interface{}) {

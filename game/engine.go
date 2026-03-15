@@ -6,8 +6,8 @@ import (
 	"sort"
 	"time"
 
-	"annonymity/models"
-	"annonymity/questions"
+	"anonymity/models"
+	"anonymity/questions"
 )
 
 type Engine struct{}

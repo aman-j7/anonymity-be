@@ -1,4 +1,4 @@
-module annonymity
+module anonymity
 
 go 1.22.0
 

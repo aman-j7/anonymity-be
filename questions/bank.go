@@ -1,6 +1,6 @@
 package questions
 
-import "annonymity/models"
+import "anonymity/models"
 
 // GetDefaultQuestions returns a new slice of 100 funny party game questions.
 // Callers can safely shuffle the returned slice without affecting other callers.
