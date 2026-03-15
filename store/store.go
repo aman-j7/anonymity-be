@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"annonymity/models"
-	"annonymity/utils"
+	"anonymity/models"
+	"anonymity/utils"
 )
 
 type GameStore struct {
