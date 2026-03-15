@@ -5,9 +5,10 @@ import (
 	"math/rand"
 	"sort"
 	"time"
-
+	"fmt"
 	"anonymity/models"
 	"anonymity/questions"
+	"anonymity/appconstants"
 )
 
 type Engine struct{}
@@ -30,10 +31,13 @@ func (e *Engine) HandleStartGame(player *models.Player, room *models.Room) {
 		return
 	}
 	activeCount := room.ActivePlayerCount()
-	if activeCount < 3 {
-		SendError(player, "MIN_PLAYERS", "Need at least 3 players to start")
+
+	if activeCount < appconstants.ActivePlayerCount {
+		errorString := fmt.Sprintf("Need at least %d players to start",appconstants.ActivePlayerCount,)
+		SendError(player, "MIN_PLAYERS", errorString)
 		return
 	}
+
 
 	room.Status = models.RoomStatusPlaying
 
