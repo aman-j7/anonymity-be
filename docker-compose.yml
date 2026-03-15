@@ -12,7 +12,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     networks:
-      - annonymity
+      - anonymity
 
   redis:
     image: redis:7-alpine
@@ -27,26 +27,26 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - annonymity
+      - anonymity
 
   postgres:
     image: postgres:16-alpine
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: annonymity
-      POSTGRES_USER: annonymity
-      POSTGRES_PASSWORD: annonymity_secret
+      POSTGRES_DB: anonymity
+      POSTGRES_USER: anonymity
+      POSTGRES_PASSWORD: anonymity_secret
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-ARGS", "pg_isready", "-U", "annonymity"]
+      test: ["CMD-ARGS", "pg_isready", "-U", "anonymity"]
       interval: 5s
       timeout: 3s
       retries: 5
     restart: unless-stopped
     networks:
-      - annonymity
+      - anonymity
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
@@ -65,7 +65,7 @@ services:
       retries: 10
     restart: unless-stopped
     networks:
-      - annonymity
+      - anonymity
 
   kibana:
     image: docker.elastic.co/kibana/kibana:8.12.0
@@ -78,7 +78,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     networks:
-      - annonymity
+      - anonymity
 
 volumes:
   redis_data:
@@ -86,5 +86,5 @@ volumes:
   es_data:
 
 networks:
-  annonymity:
+  anonymity:
     driver: bridge
