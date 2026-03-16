@@ -267,6 +267,9 @@ func (h *WSHandler) routeMessage(player *models.Player, room *models.Room, msg m
 	switch msg.Type {
 	case "start_game":
 		h.engine.HandleStartGame(player, room)
+	
+	case "end_game":
+		h.engine.HandleEndGame(player, room)
 
 	case "submit_answer":
 		var p models.SubmitAnswerPayload
