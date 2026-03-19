@@ -1,14 +1,14 @@
 package game
 
 import (
+	"anonymity/appconstants"
+	"anonymity/models"
+	"anonymity/questions"
+	"fmt"
 	"log"
 	"math/rand"
 	"sort"
 	"time"
-	"fmt"
-	"anonymity/models"
-	"anonymity/questions"
-	"anonymity/appconstants"
 )
 
 type Engine struct{}
@@ -33,11 +33,10 @@ func (e *Engine) HandleStartGame(player *models.Player, room *models.Room) {
 	activeCount := room.ActivePlayerCount()
 
 	if activeCount < appconstants.ActivePlayerCount {
-		errorString := fmt.Sprintf("Need at least %d players to start",appconstants.ActivePlayerCount,)
+		errorString := fmt.Sprintf("Need at least %d players to start", appconstants.ActivePlayerCount)
 		SendError(player, "MIN_PLAYERS", errorString)
 		return
 	}
-
 
 	room.Status = models.RoomStatusPlaying
 
@@ -65,6 +64,43 @@ func (e *Engine) HandleStartGame(player *models.Player, room *models.Room) {
 
 	e.startRound(room)
 }
+
+func (e *Engine) HandleEndGame(player *models.Player, room *models.Room) {
+
+	room.Mu.Lock()
+	defer room.Mu.Unlock()
+
+	if !player.IsHost {
+		SendError(player, "NOT_HOST", "Only the host can end the game")
+		return
+	}
+
+	
+	if room.PhaseTimer != nil {
+		room.PhaseTimer.Stop()
+		room.PhaseTimer = nil
+	}
+
+	
+	room.Rounds = []*models.Round{}
+	room.CurrentRound = -1
+
+	room.Questions = nil
+	room.QuestionIdx = -1
+
+	room.FeaturedOrder = nil
+	room.FeaturedIdx = -1
+
+	
+	for _, p := range room.Players {
+		p.Score = 0
+	}
+
+	room.Status = models.RoomStatusLobby
+
+	BroadcastToRoom(room, "game_ended", nil)
+}
+
 
 // startRound begins a new round. Must be called with room.Mu held.
 func (e *Engine) startRound(room *models.Room) {
