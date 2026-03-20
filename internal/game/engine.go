@@ -1,9 +1,9 @@
 package game
 
 import (
-	"anonymity/constants"
-	"anonymity/models"
-	"anonymity/questions"
+	"anonymity/internal/constants"
+	"anonymity/internal/models"
+	"anonymity/internal/questions"
 	"fmt"
 	"log"
 	"math/rand"

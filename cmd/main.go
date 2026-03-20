@@ -8,14 +8,19 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/cors"
 
-	"anonymity/config"
-	"anonymity/game"
-	"anonymity/handlers"
-	"anonymity/store"
+	"anonymity/internal/config"
+	"anonymity/internal/game"
+	"anonymity/internal/routers"
+	"anonymity/internal/store"
 )
 
 func main() {
 	cfg := config.Load()
+
+	config.InitRedis()
+	if config.RedisClient == nil {
+		return
+	}
 
 	gameStore := store.New()
 	gameStore.StartCleanup(cfg.CleanupInterval, cfg.MaxIdleTime)

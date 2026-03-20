@@ -7,8 +7,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"anonymity/models"
-	"anonymity/store"
+	customerror "anonymity/internal/err"
+	"anonymity/internal/models"
+	"anonymity/internal/store"
 )
 
 type HTTPHandler struct {
@@ -89,7 +90,11 @@ func (h *HTTPHandler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	room, hostID := h.store.CreateRoom(req.HostName, settings)
+	room, hostID, err := h.store.CreateRoom(req.HostName, settings)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
 
 	writeJSON(w, http.StatusCreated, CreateRoomResponse{
 		RoomCode:     room.Code,
@@ -158,4 +163,15 @@ func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(v)
+}
+
+func handleError(w http.ResponseWriter, err error) {
+	if appErr, ok := err.(*customerror.AppError); ok {
+		writeJSON(w, appErr.Code, appErr)
+		return
+	}
+
+	writeJSON(w, http.StatusInternalServerError, map[string]string{
+		"message": "Internal server error",
+	})
 }

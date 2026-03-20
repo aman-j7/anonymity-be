@@ -6,9 +6,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
-	"anonymity/models"
-	"anonymity/utils"
+	"anonymity/internal/models"
+	"anonymity/internal/utils"
 )
 
 type GameStore struct {
@@ -22,14 +21,15 @@ func New() *GameStore {
 	}
 }
 
-func (s *GameStore) CreateRoom(hostName string, settings models.RoomSettings) (*models.Room, string) {
+func (s *GameStore) CreateRoom(hostName string, settings models.RoomSettings,) (*models.Room, string,error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	code := utils.GenerateRoomCode(func(c string) bool {
-		_, ok := s.rooms[c]
-		return ok
-	})
+	code, err := utils.GenerateRoomCode()
+	if err != nil {
+		return nil, "", err 
+	}
+
 
 	hostID := uuid.New().String()
 
@@ -54,7 +54,7 @@ func (s *GameStore) CreateRoom(hostName string, settings models.RoomSettings) (*
 	}
 
 	s.rooms[code] = room
-	return room, hostID
+	return room, hostID, nil 
 }
 
 func (s *GameStore) GetRoom(code string) *models.Room {

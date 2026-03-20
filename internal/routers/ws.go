@@ -9,9 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 
-	"anonymity/game"
-	"anonymity/models"
-	"anonymity/store"
+	"anonymity/internal/game"
+	"anonymity/internal/models"
+	"anonymity/internal/store"
 )
 
 const (
