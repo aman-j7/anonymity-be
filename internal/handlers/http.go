@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-
-	customerror "anonymity/internal/err"
+	customerror "anonymity/internal/error"
 	"anonymity/internal/models"
 	"anonymity/internal/store"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type HTTPHandler struct {
@@ -90,7 +90,7 @@ func (h *HTTPHandler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	room, hostID, err := h.store.CreateRoom(req.HostName, settings)
+	room, hostID, err := h.store.CreateRoom(req.HostName, settings, r.Context())
 	if err != nil {
 		handleError(w, err)
 		return
@@ -165,7 +165,7 @@ func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	json.NewEncoder(w).Encode(v)
 }
 
-func handleError(w http.ResponseWriter, err error) {
+func handleError(w http.ResponseWriter, err any) {
 	if appErr, ok := err.(*customerror.AppError); ok {
 		writeJSON(w, appErr.Code, appErr)
 		return

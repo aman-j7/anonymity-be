@@ -1,13 +1,15 @@
 package store
 
 import (
+	"context"
 	"log"
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"anonymity/internal/models"
 	"anonymity/internal/utils"
+
+	"github.com/google/uuid"
 )
 
 type GameStore struct {
@@ -21,15 +23,14 @@ func New() *GameStore {
 	}
 }
 
-func (s *GameStore) CreateRoom(hostName string, settings models.RoomSettings,) (*models.Room, string,error) {
+func (s *GameStore) CreateRoom(hostName string, settings models.RoomSettings, ctx context.Context) (*models.Room, string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	code, err := utils.GenerateRoomCode()
+	code, err := utils.GenerateRoomCode(ctx)
 	if err != nil {
-		return nil, "", err 
+		return nil, "", err
 	}
-
 
 	hostID := uuid.New().String()
 
@@ -54,7 +55,7 @@ func (s *GameStore) CreateRoom(hostName string, settings models.RoomSettings,) (
 	}
 
 	s.rooms[code] = room
-	return room, hostID, nil 
+	return room, hostID, nil
 }
 
 func (s *GameStore) GetRoom(code string) *models.Room {

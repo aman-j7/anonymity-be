@@ -1,4 +1,4 @@
-package customerror
+package error
 
 import "net/http"
 
@@ -28,14 +28,12 @@ func ServiceUnavailable(msg string) *AppError {
 	return New(msg, http.StatusServiceUnavailable)
 }
 
-
 func BadRequest(msg string) *AppError {
 	if msg == "" {
 		msg = "Invalid request"
 	}
 	return New(msg, http.StatusBadRequest)
 }
-
 
 func NotFound(msg string) *AppError {
 	if msg == "" {
