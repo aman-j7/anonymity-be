@@ -1,12 +1,14 @@
 package utils
 
 import (
+	"context"
 	"math/rand"
 	"time"
 
-	"anonymity/internal/config"
-	"anonymity/internal/err"
-	 "github.com/redis/go-redis/v9"
+	customerror "anonymity/internal/error"
+	"anonymity/internal/infra"
+
+	"github.com/redis/go-redis/v9"
 )
 
 const (
@@ -16,17 +18,16 @@ const (
 	roomTTL    = 2 * time.Hour
 )
 
-
 func init() {
-	rand.New(rand.NewSource(time.Now().UnixNano()))   
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
-func GenerateRoomCode() (string, error) {
+func GenerateRoomCode(ctx context.Context) (string, error) {
 	for i := 0; i < maxRetries; i++ {
 		code := randomCode()
 		key := "room:" + code
 
-		result, err := config.RedisClient.SetArgs(config.Ctx, key, "active", redis.SetArgs{
+		result, err := infra.Redis.SetArgs(ctx, key, "active", redis.SetArgs{
 			Mode: "NX",
 			TTL:  roomTTL,
 		}).Result()
@@ -43,22 +44,19 @@ func GenerateRoomCode() (string, error) {
 	return "", customerror.ServiceUnavailable("Unable to generate room code, please try again")
 }
 
-
-func DeleteRoomCode(code string) error {
+func DeleteRoomCode(code string, ctx context.Context) error {
 	key := "room:" + code
-	return config.RedisClient.Del(config.Ctx, key).Err()
+	return infra.Redis.Del(ctx, key).Err()
 }
 
-
-func RoomExists(code string) (bool, error) {
+func RoomExists(code string, ctx context.Context) (bool, error) {
 	key := "room:" + code
-	exists, err := config.RedisClient.Exists(config.Ctx, key).Result()
+	exists, err := infra.Redis.Exists(ctx, key).Result()
 	if err != nil {
 		return false, err
 	}
 	return exists == 1, nil
 }
-
 
 func randomCode() string {
 	b := make([]byte, codeLength)
