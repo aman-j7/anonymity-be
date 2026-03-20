@@ -30,3 +30,22 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Delve debug binaries
+__debug_bin*
+
+# IDE
+.vscode/
+.idea/
+# binaries
+server
+
+# build
+/bin
+/dist
+
+# docker
+*.log
+
+# OS
+.DS_Store
