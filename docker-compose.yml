@@ -60,6 +60,15 @@ services:
     networks:
       - anonymity
 
+  redisinsight:
+    image: redis/redisinsight:latest
+    ports:
+      - "5540:5540"
+    depends_on:
+      - redis
+    networks:
+    - anonymity
+
 volumes:
   redis_data:
   pg_data:
