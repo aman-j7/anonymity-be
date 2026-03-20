@@ -37,3 +37,15 @@ __debug_bin*
 # IDE
 .vscode/
 .idea/
+# binaries
+server
+
+# build
+/bin
+/dist
+
+# docker
+*.log
+
+# OS
+.DS_Store
