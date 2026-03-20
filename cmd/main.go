@@ -10,7 +10,7 @@ import (
 
 	"anonymity/internal/config"
 	"anonymity/internal/game"
-	"anonymity/internal/routers"
+	"anonymity/internal/handlers"
 	"anonymity/internal/store"
 )
 

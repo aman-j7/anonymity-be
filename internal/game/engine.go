@@ -1,7 +1,7 @@
 package game
 
 import (
-	"anonymity/internal/constants"
+	"anonymity/constants"
 	"anonymity/internal/models"
 	"anonymity/internal/questions"
 	"fmt"
