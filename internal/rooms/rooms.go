@@ -75,20 +75,20 @@ func toInterfaceSlice(arr []string) []interface{} {
 func checkAvailableRoomCode() {
 	context := context.Background()
 	roomCodeCount, roomCodesError := infra.Redis.SCard(context, constants.RoomCodeBucketKey).Result()
-	if roomCodesError == nil {
-		log.Fatal(roomCodesError)
+	if roomCodesError != nil {
+		log.Printf("Error occurred fetching room count: %v", roomCodesError)
 		return
 	}
 
 	currentBatchSize, batchSizeError := infra.Redis.Get(context, constants.RoomBucketSizeKey).Result()
-	if batchSizeError == nil {
-		log.Fatal(roomCodesError)
+	if batchSizeError != nil {
+		log.Printf("Error occurred fetching room batch size: %v", batchSizeError)
 		return
 	}
 	size, _ := strconv.ParseInt(currentBatchSize, 10, 64)
 
 	if size >= constants.MaxRoomCount {
-		log.Println("Max room limit reached")
+		log.Printf("Max room limit %d reached", constants.MaxRoomCount)
 		return
 	}
 
@@ -107,10 +107,9 @@ func checkAvailableRoomCode() {
 }
 
 func updateRoomCodeBatchSize(size int64) {
-	err, _ := infra.Redis.Set(context.Background(), constants.RoomBucketSizeKey, size, 0).Result()
-	if err != "OK" {
-		log.Fatal(err)
-		log.Fatal("Error occurred on room bucket size initialization")
+	_, err := infra.Redis.Set(context.Background(), constants.RoomBucketSizeKey, size, 0).Result()
+	if err != nil {
+		log.Printf("Error occurred on room bucket size initialization: %v", err)
 		return
 	}
 }
@@ -120,7 +119,7 @@ func addRoomCodesInBucket(size int64) {
 	err := infra.Redis.SAdd(context.Background(), constants.RoomCodeBucketKey, codes...).Err()
 
 	if err != nil {
-		log.Fatal("Room code token bucket initialization failed")
+		log.Printf("Room code token bucket initialization failed %v", err)
 		return
 	}
 	log.Printf("%d new room codes added to bucket", size)
