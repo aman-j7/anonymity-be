@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"anonymity/internal/models"
-	"anonymity/internal/utils"
+	"anonymity/internal/rooms"
 
 	"github.com/google/uuid"
 )
@@ -18,22 +18,25 @@ type GameStore struct {
 }
 
 func New() *GameStore {
+
+	rooms.Init()
 	return &GameStore{
 		rooms: make(map[string]*models.Room),
 	}
+
 }
 
 func (s *GameStore) CreateRoom(hostName string, settings models.RoomSettings, ctx context.Context) (*models.Room, string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	code, err := utils.GenerateRoomCode(ctx)
+	code, err := rooms.GetRoomCode(ctx)
 	if err != nil {
-		return nil, "", err
+		log.Fatal(err)
+		return nil, "No room code found", err
 	}
 
 	hostID := uuid.New().String()
-
 	host := &models.Player{
 		ID:     hostID,
 		Name:   hostName,

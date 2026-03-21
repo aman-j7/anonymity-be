@@ -32,8 +32,8 @@ func (e *Engine) HandleStartGame(player *models.Player, room *models.Room) {
 	}
 	activeCount := room.ActivePlayerCount()
 
-	if activeCount < appconstants.ActivePlayerCount {
-		errorString := fmt.Sprintf("Need at least %d players to start", appconstants.ActivePlayerCount)
+	if activeCount < constants.ActivePlayerCount {
+		errorString := fmt.Sprintf("Need at least %d players to start", constants.ActivePlayerCount)
 		SendError(player, "MIN_PLAYERS", errorString)
 		return
 	}
@@ -75,13 +75,11 @@ func (e *Engine) HandleEndGame(player *models.Player, room *models.Room) {
 		return
 	}
 
-	
 	if room.PhaseTimer != nil {
 		room.PhaseTimer.Stop()
 		room.PhaseTimer = nil
 	}
 
-	
 	room.Rounds = []*models.Round{}
 	room.CurrentRound = -1
 
@@ -91,7 +89,6 @@ func (e *Engine) HandleEndGame(player *models.Player, room *models.Room) {
 	room.FeaturedOrder = nil
 	room.FeaturedIdx = -1
 
-	
 	for _, p := range room.Players {
 		p.Score = 0
 	}
@@ -100,7 +97,6 @@ func (e *Engine) HandleEndGame(player *models.Player, room *models.Room) {
 
 	BroadcastToRoom(room, "game_ended", nil)
 }
-
 
 // startRound begins a new round. Must be called with room.Mu held.
 func (e *Engine) startRound(room *models.Room) {

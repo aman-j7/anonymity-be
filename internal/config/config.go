@@ -3,18 +3,17 @@ package config
 import (
 	"log"
 	"os"
-	"time"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	Port            string
-	CleanupInterval time.Duration
-	MaxIdleTime     time.Duration
+	Port string
 
-	RedisAddr  string
-	ElasticURL string
+	RedisAddr     string
+	ElasticURL    string
+	MaxRoomCount  int
+	RoomBatchSize int
 }
 
 func Load() *Config {
@@ -24,11 +23,9 @@ func Load() *Config {
 	}
 
 	cfg := &Config{
-		Port:            os.Getenv("PORT"),
-		RedisAddr:       os.Getenv("REDIS_ADDR"),
-		ElasticURL:      os.Getenv("ELASTIC_URL"),
-		CleanupInterval: 60 * time.Second,
-		MaxIdleTime:     5 * time.Minute,
+		Port:       os.Getenv("PORT"),
+		RedisAddr:  os.Getenv("REDIS_ADDR"),
+		ElasticURL: os.Getenv("ELASTIC_URL"),
 	}
 
 	return cfg
