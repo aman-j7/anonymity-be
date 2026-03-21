@@ -19,7 +19,6 @@ type GameStore struct {
 
 func New() *GameStore {
 
-	rooms.Init()
 	return &GameStore{
 		rooms: make(map[string]*models.Room),
 	}
@@ -30,11 +29,7 @@ func (s *GameStore) CreateRoom(hostName string, settings models.RoomSettings, ct
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	code, err := rooms.GetRoomCode(ctx)
-	if err != nil {
-		log.Fatal(err)
-		return nil, "No room code found", err
-	}
+	code := rooms.GenerateRoomCode(ctx)
 
 	hostID := uuid.New().String()
 	host := &models.Player{
