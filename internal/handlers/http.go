@@ -102,6 +102,7 @@ func (h *HTTPHandler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 		HostPlayerID: hostID,
 		Settings:     room.Settings,
 	})
+	
 }
 
 func (h *HTTPHandler) GetRoom(w http.ResponseWriter, r *http.Request) {
