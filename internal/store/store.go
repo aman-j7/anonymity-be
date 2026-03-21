@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"anonymity/constants"
+	"anonymity/internal/logger"
 	"anonymity/internal/models"
 	"anonymity/internal/utils"
 
@@ -29,6 +31,13 @@ func (s *GameStore) CreateRoom(hostName string, settings models.RoomSettings, ct
 
 	code, err := utils.GenerateRoomCode(ctx)
 	if err != nil {
+		
+		go logger.EsLogger("room-logs", map[string]interface{}{
+			"event":     "room_creation_failed",
+			"error":     err.Error(),
+			"host_name": hostName,
+		})
+
 		return nil, "", err
 	}
 
@@ -55,6 +64,18 @@ func (s *GameStore) CreateRoom(hostName string, settings models.RoomSettings, ct
 	}
 
 	s.rooms[code] = room
+
+	
+	go logger.EsLogger(constants.EsRoomLoggerIdx, map[string]interface{}{
+		"event":        "room_created",
+		"room_code":    code,
+		"host_id":      hostID,
+		"host_name":    hostName,
+		"player_count": len(room.Players),
+		"status":       room.Status,
+		"created_at":   room.CreatedAt,
+	})
+
 	return room, hostID, nil
 }
 
