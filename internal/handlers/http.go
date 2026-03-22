@@ -7,6 +7,7 @@ import (
 
 	customerror "anonymity/internal/error"
 	"anonymity/internal/models"
+	"anonymity/internal/rooms"
 	"anonymity/internal/store"
 
 	"github.com/go-chi/chi/v5"
@@ -101,6 +102,7 @@ func (h *HTTPHandler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 		HostPlayerID: hostID,
 		Settings:     room.Settings,
 	})
+	
 }
 
 func (h *HTTPHandler) GetRoom(w http.ResponseWriter, r *http.Request) {
@@ -154,7 +156,7 @@ func (h *HTTPHandler) GetRoom(w http.ResponseWriter, r *http.Request) {
 func (h *HTTPHandler) Health(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"status":         "ok",
-		"active_rooms":   h.store.RoomCount(),
+		"active_rooms":   rooms.RoomCount(),
 		"uptime_seconds": int(time.Since(h.startTime).Seconds()),
 	})
 }

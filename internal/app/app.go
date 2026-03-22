@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"anonymity/constants"
 	"anonymity/internal/config"
 	"anonymity/internal/game"
 	"anonymity/internal/handlers"
@@ -24,7 +25,7 @@ func Run() {
 
 	// ✅ Core components
 	gameStore := store.New()
-	gameStore.StartCleanup(cfg.CleanupInterval, cfg.MaxIdleTime)
+	gameStore.StartCleanup(constants.CleanupInterval, constants.MaxIdleTime)
 
 	engine := game.NewEngine()
 
