@@ -1,5 +1,5 @@
 package constants
 
 const (
-	OpenRouterURL = "https://openrouter.ai/api/v1/chat/completions"
+	RoomCodeContainerKey = "room_code_container"
 )

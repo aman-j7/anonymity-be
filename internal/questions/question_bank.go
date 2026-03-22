@@ -14,18 +14,18 @@ func NewQuestionBank(service QuestionService) *QuestionBank {
 		service: service,
 	}
 }
+
 func (qb *QuestionBank) InitQuestionPool(room *models.Room) error {
 	room.UsedQuestionIDs = make(map[string]bool)
 	room.Questions = []models.Question{}
 	room.QuestionIdx = 0
 
-	//prefetching more data two times more
 	initialSize := room.Settings.NumRounds * 2
-	log.Println("inside InitQuestionPool -> "+(string)(len(room.Questions)))
+
 	return qb.RefillPool(room, initialSize)
 }
 
-func (qb *QuestionBank) FetchUniqueQuestions(n int,used map[string]bool,) ([]models.Question, error) {
+func (qb *QuestionBank) FetchUniqueQuestions(n int, used map[string]bool) ([]models.Question, error) {
 
 	result := make([]models.Question, 0, n)
 	for len(result) < n {
@@ -60,7 +60,7 @@ func (qb *QuestionBank) RefillPool(room *models.Room, count int) error {
 	}
 
 	room.Questions = append(room.Questions, newQs...)
-	log.Println("inside RefillPool -> "+(string)(len(room.Questions)))
+	log.Println("inside RefillPool -> " + (string)(len(room.Questions)))
 	return nil
 }
 

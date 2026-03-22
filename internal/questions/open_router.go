@@ -9,12 +9,10 @@ import (
 	"io"
 	"net/http"
 	"regexp"
-	"time"
 )
 
 const (
-	defaultTimeout = 10 * time.Second
-	modelName      = "deepseek/deepseek-chat"
+	modelName = "deepseek/deepseek-chat"
 )
 
 type Message struct {
@@ -37,24 +35,34 @@ type AIResponse struct {
 	Questions []string `json:"questions"`
 }
 
-func GenerateTemplatesByGenre(ctx context.Context, genre string, count int, apiKey string) ([]string, error) {
-	if apiKey == "" {
+type OpenRouter struct {
+	apiKey string
+}
+
+func InitOpenRouter(apiKey string) *OpenRouter {
+	return &OpenRouter{
+		apiKey: apiKey,
+	}
+}
+
+func (service *OpenRouter) GenerateTemplatesByGenre(genre string, count int) ([]string, error) {
+	if service.apiKey == "" {
 		return nil, fmt.Errorf("missing OPEN_ROUTER_API_KEY")
 	}
 
-	prompt := buildPrompt(genre, count)
+	prompt := service.buildPrompt(genre, count)
 
-	raw, err := callOpenRouter(ctx, prompt, apiKey)
+	raw, err := service.callOpenRouter(context.Background(), prompt, service.apiKey)
 	if err != nil {
 		return nil, err
 	}
 
-	questions, err := parseAIResponse(raw)
+	questions, err := service.parseAIResponse(raw)
 	if err != nil {
 		return nil, err
 	}
 
-	questions = filterValidQuestions(questions)
+	questions = service.filterValidQuestions(questions)
 
 	if len(questions) == 0 {
 		return nil, fmt.Errorf("no valid templates generated")
@@ -63,7 +71,7 @@ func GenerateTemplatesByGenre(ctx context.Context, genre string, count int, apiK
 	return questions, nil
 }
 
-func buildPrompt(genre string, count int) string {
+func (service *OpenRouter) buildPrompt(genre string, count int) string {
 	return fmt.Sprintf(`
 		Generate %d funny party game question templates for the genre: "%s".
 
@@ -81,7 +89,7 @@ func buildPrompt(genre string, count int) string {
 		count, genre)
 }
 
-func callOpenRouter(ctx context.Context, prompt string, apiKey string) (string, error) {
+func (service *OpenRouter) callOpenRouter(ctx context.Context, prompt string, apiKey string) (string, error) {
 	reqBody := RequestBody{
 		Model: modelName,
 		Messages: []Message{
@@ -107,9 +115,7 @@ func callOpenRouter(ctx context.Context, prompt string, apiKey string) (string, 
 	req.Header.Set("HTTP-Referer", "http://localhost")
 	req.Header.Set("X-Title", "Template Generator")
 
-	client := &http.Client{
-		Timeout: defaultTimeout,
-	}
+	client := &http.Client{}
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -138,8 +144,8 @@ func callOpenRouter(ctx context.Context, prompt string, apiKey string) (string, 
 	return result.Choices[0].Message.Content, nil
 }
 
-func parseAIResponse(raw string) ([]string, error) {
-	jsonStr := extractJSON(raw)
+func (service *OpenRouter) parseAIResponse(raw string) ([]string, error) {
+	jsonStr := service.extractJSON(raw)
 	if jsonStr == "" {
 		return nil, fmt.Errorf("no JSON found in response")
 	}
@@ -157,7 +163,7 @@ func parseAIResponse(raw string) ([]string, error) {
 	return nil, fmt.Errorf("failed to parse AI response")
 }
 
-func extractJSON(raw string) string {
+func (service *OpenRouter) extractJSON(raw string) string {
 
 	obj := regexp.MustCompile(`\{[\s\S]*\}`).FindString(raw)
 	if obj != "" {
@@ -168,11 +174,11 @@ func extractJSON(raw string) string {
 	return arr
 }
 
-func filterValidQuestions(questions []string) []string {
+func (service *OpenRouter) filterValidQuestions(questions []string) []string {
 	valid := make([]string, 0, len(questions))
 
 	for _, q := range questions {
-		if containsPlayer(q) {
+		if service.containsPlayer(q) {
 			valid = append(valid, q)
 		}
 	}
@@ -180,6 +186,6 @@ func filterValidQuestions(questions []string) []string {
 	return valid
 }
 
-func containsPlayer(q string) bool {
+func (service *OpenRouter) containsPlayer(q string) bool {
 	return regexp.MustCompile(`\{player\}`).MatchString(q)
 }

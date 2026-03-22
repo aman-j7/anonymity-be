@@ -1,56 +1,62 @@
 package app
 
 import (
-	"context"
 	"log"
 	"net/http"
 
 	"anonymity/constants"
 	"anonymity/internal/config"
+	"anonymity/internal/es"
 	"anonymity/internal/game"
 	"anonymity/internal/handlers"
 	"anonymity/internal/infra"
 	"anonymity/internal/questions"
 	"anonymity/internal/router"
 	"anonymity/internal/store"
-	"anonymity/internal/questions"
 )
 
 func Run() {
-	// ✅ Load config
+
 	cfg := config.Load()
 	if cfg == nil {
 		log.Fatal("Error on loading env")
 	}
 
-	// ✅ Init global infra
 	infra.Init(cfg)
 
-	questions.GenerateTemplatesByGenre(context.Background(), "dark humor", 10, cfg.OpenRouterApiKey)
-	// ✅ Core components
 	gameStore := store.New()
 	gameStore.StartCleanup(constants.CleanupInterval, constants.MaxIdleTime)
 
-	// ✅ Question system
-	//autowiring is happing here
 	qs := &questions.ESQuestionService{}
 	qb := questions.NewQuestionBank(qs)
+	openRouter := questions.InitOpenRouter(cfg.OpenRouterApiKey)
+	esRepository := &es.ESRepository{}
 
-	// ✅ Engine
-	//passing the question struct 
+	checkQuestionsAvailability(esRepository, openRouter, qs)
 	engine := game.NewEngine(qb)
 
-	// ✅ Handlers
 	httpHandler := handlers.NewHTTPHandler(gameStore)
 	wsHandler := handlers.NewWSHandler(gameStore, engine)
 
-	// ✅ Router
 	r := router.New(httpHandler, wsHandler)
 
-	// ✅ Start server
 	startServer(cfg.Port, r)
 }
 
+func checkQuestionsAvailability(es *es.ESRepository, openRouter *questions.OpenRouter, qs *questions.ESQuestionService) {
+	cat, err := es.GetCategoriesOrFallback(20)
+	if err != nil {
+		log.Fatalf("Error on fetching categories %v", err)
+	}
+	questions, err := qs.GenerateQuestionsForAllCategories(openRouter, cat)
+	if err != nil {
+		log.Fatalf("Error on generating questions for categories %v", err)
+	}
+	err = es.BulkQuestionsPush(questions)
+	if err != nil {
+		log.Fatalf("Error on bulk questions for push %v", err)
+	}
+}
 
 func startServer(port string, handler http.Handler) {
 	log.Printf("=== Anonymity Server ===")
