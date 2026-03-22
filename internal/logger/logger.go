@@ -1,9 +1,7 @@
 package logger
 
-import (
-	"anonymity/internal/elasticsearch"
-)
+import "anonymity/internal/es"
 
 func EsLogger(indexName string, data map[string]interface{}) {
-	go elasticsearch.Logger(indexName, data)
+	go es.Logger(indexName, data)
 }
