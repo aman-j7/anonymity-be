@@ -11,10 +11,14 @@ import (
 	"time"
 )
 
-type Engine struct{}
+type Engine struct{
+	questionBank *questions.QuestionBank
+}
 
-func NewEngine() *Engine {
-	return &Engine{}
+func NewEngine(qb *questions.QuestionBank) *Engine {
+	return &Engine{
+		questionBank: qb,
+	}
 }
 
 // HandleStartGame is called when the host sends "start_game". Lock: acquires room.Mu.
@@ -40,10 +44,14 @@ func (e *Engine) HandleStartGame(player *models.Player, room *models.Room) {
 
 	room.Status = models.RoomStatusPlaying
 
-	qs := questions.GetDefaultQuestions()
-	rand.Shuffle(len(qs), func(i, j int) { qs[i], qs[j] = qs[j], qs[i] })
-	room.Questions = qs
-	room.QuestionIdx = 0
+	err := e.questionBank.InitQuestionPool(room)
+	if err != nil {
+		SendError(player, "QUESTION_INIT_FAILED", "Failed to load questions")
+		return
+	}else {
+		log.Println("inside HandleStartGame -> "+(string)(len(room.Questions)))
+	}
+
 
 	playerIDs := make([]string, 0, len(room.Players))
 	for id, p := range room.Players {
@@ -100,16 +108,16 @@ func (e *Engine) HandleEndGame(player *models.Player, room *models.Room) {
 
 // startRound begins a new round. Must be called with room.Mu held.
 func (e *Engine) startRound(room *models.Room) {
-	if room.QuestionIdx >= len(room.Questions) {
-		rand.Shuffle(len(room.Questions), func(i, j int) {
-			room.Questions[i], room.Questions[j] = room.Questions[j], room.Questions[i]
-		})
-		room.QuestionIdx = 0
+	question, err := e.questionBank.GetNextQuestion(room)
+	if err != nil {
+		log.Printf("Room %s: failed to fetch question: %v", room.Code, err)
+		return
+	}else{
+		log.Println("inside startRound -> "+(string)(len(room.Questions)))
 	}
-	question := room.Questions[room.QuestionIdx]
-	room.QuestionIdx++
 
 	featuredPlayer := e.pickFeaturedPlayer(room)
+	// Replaces {player} in template
 	rendered := question.Render(featuredPlayer.Name)
 
 	roundNum := len(room.Rounds) + 1
@@ -118,7 +126,7 @@ func (e *Engine) startRound(room *models.Room) {
 
 	round := &models.Round{
 		RoundNumber:    roundNum,
-		Question:       question,
+		Question:       *question, 
 		RenderedPrompt: rendered,
 		FeaturedPlayer: featuredPlayer.ID,
 		Phase:          models.PhaseAnswering,
