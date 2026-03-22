@@ -36,6 +36,8 @@ func initElastic(cfg *config.Config) {
 	log.Println("✅ Elasticsearch initialized")
 
 	createIndexIfNotExists(constants.EsRoomLoggerIdx)
+	createQuestionsIndex(constants.EsQuestionsIdx)
+
 }
 
 
@@ -109,4 +111,65 @@ func createIndexIfNotExists(indexName string) {
 	}
 
 	log.Println("Index created:", indexName)
+}
+
+func createQuestionsIndex(indexName string) {
+	if indexName == "" {
+		log.Println("questions indexName is empty")
+		return
+	}
+
+	if ES == nil {
+		log.Println("ES client is nil")
+		return
+	}
+
+	res, err := ES.Indices.Exists([]string{indexName})
+	if err != nil {
+		log.Printf("Error checking questions index: %v", err)
+		return
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode == 200 {
+		log.Println("Questions index already exists:", indexName)
+		return
+	}
+
+	if res.StatusCode != 404 {
+		log.Printf("Unexpected status checking questions index: %d", res.StatusCode)
+		return
+	}
+
+	mapping := `{
+		"settings": {
+			"number_of_shards": 1,
+			"number_of_replicas": 0
+		},
+		"mappings": {
+			"properties": {
+				"template": { "type": "text" },
+				"category": { "type": "keyword" }
+			}
+		}
+	}`
+
+	createRes, err := ES.Indices.Create(
+		indexName,
+		ES.Indices.Create.WithContext(context.Background()),
+		ES.Indices.Create.WithBody(strings.NewReader(mapping)),
+	)
+
+	if err != nil {
+		log.Printf("Error creating questions index: %v", err)
+		return
+	}
+	defer createRes.Body.Close()
+
+	if createRes.IsError() {
+		log.Printf("Questions index creation failed: %s", createRes.String())
+		return
+	}
+
+	log.Println("Questions index created:", indexName)
 }

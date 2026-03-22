@@ -40,14 +40,18 @@ type Room struct {
 	Rounds        []*Round           `json:"rounds"`
 	CurrentRound  int                `json:"current_round"`
 	Settings      RoomSettings       `json:"settings"`
-	Questions     []Question         `json:"-"`
-	QuestionIdx   int                `json:"-"`
-	FeaturedOrder []string           `json:"-"`
-	FeaturedIdx   int                `json:"-"`
-	CreatedAt     time.Time          `json:"created_at"`
-	LastActivity  time.Time          `json:"-"`
-	PhaseTimer    *time.Timer        `json:"-"`
+
+	Questions        []Question         `json:"-"`
+	QuestionIdx      int                `json:"-"`
+	UsedQuestionIDs  map[string]bool    `json:"-"` 
+
+	FeaturedOrder []string      `json:"-"`
+	FeaturedIdx   int           `json:"-"`
+	CreatedAt     time.Time     `json:"created_at"`
+	LastActivity  time.Time     `json:"-"`
+	PhaseTimer    *time.Timer   `json:"-"`
 }
+
 
 func (r *Room) CurrentRoundData() *Round {
 	if r.CurrentRound < 0 || r.CurrentRound >= len(r.Rounds) {

@@ -13,6 +13,7 @@ import (
 	"anonymity/internal/questions"
 	"anonymity/internal/router"
 	"anonymity/internal/store"
+	"anonymity/internal/questions"
 )
 
 func Run() {
@@ -30,7 +31,14 @@ func Run() {
 	gameStore := store.New()
 	gameStore.StartCleanup(constants.CleanupInterval, constants.MaxIdleTime)
 
-	engine := game.NewEngine()
+	// ✅ Question system
+	//autowiring is happing here
+	qs := &questions.ESQuestionService{}
+	qb := questions.NewQuestionBank(qs)
+
+	// ✅ Engine
+	//passing the question struct 
+	engine := game.NewEngine(qb)
 
 	// ✅ Handlers
 	httpHandler := handlers.NewHTTPHandler(gameStore)
@@ -42,6 +50,7 @@ func Run() {
 	// ✅ Start server
 	startServer(cfg.Port, r)
 }
+
 
 func startServer(port string, handler http.Handler) {
 	log.Printf("=== Anonymity Server ===")
