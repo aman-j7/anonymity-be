@@ -55,9 +55,8 @@ func (s *GameStore) CreateRoom(hostName string, settings models.RoomSettings, ct
 
 	s.rooms[code] = room
 
-	
-	go logger.EsLogger(constants.EsRoomLoggerIdx, map[string]interface{}{
-		"event":        "room_created",
+	logger.EsLogger(constants.EsRoomLoggerIdx, map[string]interface{}{
+		"event":        constants.RoomEvent,
 		"room_code":    code,
 		"host_id":      hostID,
 		"host_name":    hostName,

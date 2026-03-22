@@ -1,21 +1,20 @@
-package logger
+package elasticsearch
 
 import (
+	"anonymity/internal/infra"
 	"bytes"
 	"context"
 	"encoding/json"
 	"log"
 	"time"
-	"anonymity/internal/infra"
 )
 
-func EsLogger(indexName string, data map[string]interface{}) {
+func Logger(indexName string, data map[string]interface{}) {
 	if infra.ES == nil {
 		log.Println("Elasticsearch client not initialized")
 		return
 	}
 
-	
 	if _, ok := data["@timestamp"]; !ok {
 		data["@timestamp"] = time.Now().UTC()
 	}
