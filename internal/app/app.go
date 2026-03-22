@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"log"
 	"net/http"
 
@@ -9,6 +10,7 @@ import (
 	"anonymity/internal/game"
 	"anonymity/internal/handlers"
 	"anonymity/internal/infra"
+	"anonymity/internal/questions"
 	"anonymity/internal/router"
 	"anonymity/internal/store"
 )
@@ -23,6 +25,7 @@ func Run() {
 	// ✅ Init global infra
 	infra.Init(cfg)
 
+	questions.GenerateTemplatesByGenre(context.Background(), "dark humor", 10, cfg.OpenRouterApiKey)
 	// ✅ Core components
 	gameStore := store.New()
 	gameStore.StartCleanup(constants.CleanupInterval, constants.MaxIdleTime)

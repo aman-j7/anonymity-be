@@ -10,10 +10,11 @@ import (
 type Config struct {
 	Port string
 
-	RedisAddr     string
-	ElasticURL    string
-	MaxRoomCount  int
-	RoomBatchSize int
+	RedisAddr        string
+	ElasticURL       string
+	MaxRoomCount     int
+	RoomBatchSize    int
+	OpenRouterApiKey string
 }
 
 func Load() *Config {
@@ -23,9 +24,10 @@ func Load() *Config {
 	}
 
 	cfg := &Config{
-		Port:       os.Getenv("PORT"),
-		RedisAddr:  os.Getenv("REDIS_ADDR"),
-		ElasticURL: os.Getenv("ELASTIC_URL"),
+		Port:             os.Getenv("PORT"),
+		RedisAddr:        os.Getenv("REDIS_ADDR"),
+		ElasticURL:       os.Getenv("ELASTIC_URL"),
+		OpenRouterApiKey: os.Getenv("OPEN_ROUTER_API_KEY"),
 	}
 
 	return cfg
