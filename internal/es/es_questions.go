@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 )
 
@@ -119,28 +120,29 @@ func (repo *ESRepository) isQuestionIndexEmpty() (bool, error) {
 	return count == 0, nil
 }
 
-func (repo *ESRepository) GetCategoriesOrFallback(limit int) ([]string, error) {
+func (repo *ESRepository) GetCategoriesOrFallback(limit int) ([]string, bool, error) {
 
 	cats, err := repo.getCategoriesWithLowCount(limit)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	if len(cats) == 0 {
 		isEmpty, err := repo.isQuestionIndexEmpty()
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		if isEmpty {
-			fmt.Println("Index is empty 🚨 Seeding questions")
+			log.Println("Index is empty 🚨 Seeding questions")
+			return nil, true, nil
 		} else {
-			fmt.Println("All categories already have enough questions 🔥")
+			log.Println("All categories already have enough questions 🔥")
+			return nil, false, nil
 		}
-		return nil, nil
 	}
 
-	return cats, nil
+	return cats, false, nil
 }
 
 func (repo *ESRepository) buildBulkRequest(questions []models.Question) (*bytes.Buffer, error) {

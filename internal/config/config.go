@@ -20,15 +20,14 @@ type Config struct {
 func Load() *Config {
 
 	if err := godotenv.Load(); err != nil {
-		log.Println(".env not found, using system env")
+		log.Fatalf("Error on loading env: %v", err)
 	}
 
-	cfg := &Config{
+	return &Config{
 		Port:             os.Getenv("PORT"),
 		RedisAddr:        os.Getenv("REDIS_ADDR"),
 		ElasticURL:       os.Getenv("ELASTIC_URL"),
 		OpenRouterApiKey: os.Getenv("OPEN_ROUTER_API_KEY"),
 	}
 
-	return cfg
 }

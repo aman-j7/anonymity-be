@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/rand/v2"
 	"strings"
 
@@ -79,6 +80,7 @@ func (service *ESQuestionService) GenerateQuestionsForAllCategories(openRouter *
 	}
 
 	for _, category := range categories {
+		log.Printf("Fetching question for category: %s", category)
 
 		templates, err := openRouter.GenerateTemplatesByGenre(category, 50)
 		if err != nil {

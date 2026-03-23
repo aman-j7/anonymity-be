@@ -1,22 +1,22 @@
 services:
-  app:
-    build: .
-    container_name: go-app
-    ports:
-      - "8080:8080"
-    env_file:
-      - .env
-    environment:
-      - REDIS_ADDR=redis:6379
-      - ELASTIC_URL=http://elasticsearch:9200
-    depends_on:
-      redis:
-        condition: service_healthy
-      elasticsearch:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - anonymity
+  # app:
+  #   build: .
+  #   container_name: go-app
+  #   ports:
+  #     - "8080:8080"
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - REDIS_ADDR=redis:6379
+  #     - ELASTIC_URL=http://elasticsearch:9200
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #     elasticsearch:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   networks:
+  #     - anonymity
 
   redis:
     image: redis:7-alpine
