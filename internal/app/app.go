@@ -6,48 +6,40 @@ import (
 
 	"anonymity/constants"
 	"anonymity/internal/config"
+	"anonymity/internal/es"
 	"anonymity/internal/game"
 	"anonymity/internal/handlers"
 	"anonymity/internal/infra"
+	"anonymity/internal/middleware"
+	"anonymity/internal/questions"
 	"anonymity/internal/router"
 	"anonymity/internal/store"
-	"anonymity/internal/questions"
 )
 
 func Run() {
-	// ✅ Load config
-	cfg := config.Load()
-	if cfg == nil {
-		log.Fatal("Error on loading env")
-	}
 
-	// ✅ Init global infra
+	cfg := config.Load()
 	infra.Init(cfg)
 
-	// ✅ Core components
+	qs := &questions.ESQuestionService{}
+	qb := questions.NewQuestionBank(qs)
+	esRepository := &es.ESRepository{}
+	middleware := &middleware.MiddlewareService{}
+
+	openRouter := questions.InitOpenRouter(cfg.OpenRouterApiKey)
+	middleware.CheckQuestionsAvailability(esRepository, openRouter, qs)
+	engine := game.NewEngine(qb)
+
 	gameStore := store.New()
 	gameStore.StartCleanup(constants.CleanupInterval, constants.MaxIdleTime)
 
-	// ✅ Question system
-	//autowiring is happing here
-	qs := &questions.ESQuestionService{}
-	qb := questions.NewQuestionBank(qs)
-
-	// ✅ Engine
-	//passing the question struct 
-	engine := game.NewEngine(qb)
-
-	// ✅ Handlers
 	httpHandler := handlers.NewHTTPHandler(gameStore)
 	wsHandler := handlers.NewWSHandler(gameStore, engine)
 
-	// ✅ Router
-	r := router.New(httpHandler, wsHandler)
+	router := router.New(httpHandler, wsHandler)
 
-	// ✅ Start server
-	startServer(cfg.Port, r)
+	startServer(cfg.Port, router)
 }
-
 
 func startServer(port string, handler http.Handler) {
 	log.Printf("=== Anonymity Server ===")

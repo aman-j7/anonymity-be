@@ -4,12 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/rand/v2"
 	"strings"
 
 	"anonymity/constants"
 	"anonymity/internal/infra"
 	"anonymity/internal/models"
+
+	"anonymity/utils"
 )
 
 type ESQuestionService struct{}
@@ -25,7 +28,7 @@ type esResponse struct {
 	} `json:"hits"`
 }
 
-func (s *ESQuestionService) GetRandomQuestions(n int) ([]models.Question, error) {
+func (service *ESQuestionService) GetRandomQuestions(n int) ([]models.Question, error) {
 
 	query := fmt.Sprintf(`{
 		"size": %d,
@@ -33,7 +36,6 @@ func (s *ESQuestionService) GetRandomQuestions(n int) ([]models.Question, error)
 		  "match_all": {}
 		}
 	  }`, n)
-	  
 
 	res, err := infra.ES.Search(
 		infra.ES.Search.WithContext(context.Background()),
@@ -67,4 +69,33 @@ func (s *ESQuestionService) GetRandomQuestions(n int) ([]models.Question, error)
 	}
 
 	return questions, nil
+}
+
+func (service *ESQuestionService) GenerateQuestionsForAllCategories(openRouter *OpenRouter, deficitCategories []string) ([]models.Question, error) {
+
+	var allQuestions []models.Question
+	categories := deficitCategories
+	if len(categories) == 0 {
+		categories = constants.Categories
+	}
+
+	for _, category := range categories {
+		log.Printf("Fetching question for category: %s", category)
+
+		templates, err := openRouter.GenerateTemplatesByGenre(category, 50)
+		if err != nil {
+			fmt.Printf("failed category %s: %v\n", category, err)
+			continue
+		}
+
+		for _, t := range templates {
+			allQuestions = append(allQuestions, models.Question{
+				ID:       utils.GenerateUUID(),
+				Template: t,
+				Category: category,
+			})
+		}
+	}
+
+	return allQuestions, nil
 }
