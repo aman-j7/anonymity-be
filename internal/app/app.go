@@ -3,6 +3,7 @@ package app
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"anonymity/constants"
 	"anonymity/internal/config"
@@ -14,6 +15,7 @@ import (
 	"anonymity/internal/questions"
 	"anonymity/internal/router"
 	"anonymity/internal/store"
+	"github.com/redis/go-redis/v9"
 )
 
 func Run() {
@@ -24,19 +26,22 @@ func Run() {
 	qs := &questions.ESQuestionService{}
 	qb := questions.NewQuestionBank(qs)
 	esRepository := &es.ESRepository{}
-	middleware := &middleware.MiddlewareService{}
+
+	mwService := &middleware.MiddlewareService{}
 
 	openRouter := questions.InitOpenRouter(cfg.OpenRouterApiKey)
-	middleware.CheckQuestionsAvailability(esRepository, openRouter, qs)
+	mwService.CheckQuestionsAvailability(esRepository, openRouter, qs)
+
 	engine := game.NewEngine(qb)
 
 	gameStore := store.New()
 	gameStore.StartCleanup(constants.CleanupInterval, constants.MaxIdleTime)
 
-	httpHandler := handlers.NewHTTPHandler(gameStore)
-	wsHandler := handlers.NewWSHandler(gameStore, engine)
 
-	router := router.New(httpHandler, wsHandler)
+	httpHandler := handlers.NewHTTPHandler(gameStore)
+	rateLimiter := newDefaultRateLimiter(infra.Redis)
+	wsHandler := handlers.NewWSHandler(gameStore, engine, rateLimiter)
+	router := router.New(httpHandler, wsHandler, rateLimiter)
 
 	startServer(cfg.Port, router)
 }
@@ -48,4 +53,16 @@ func startServer(port string, handler http.Handler) {
 	log.Printf("Health check: http://localhost:%s/api/health", port)
 
 	log.Fatal(http.ListenAndServe(":"+port, handler))
+}
+func newDefaultRateLimiter(redisClient *redis.Client) *middleware.RateLimiter {
+	return middleware.NewRateLimiter(redisClient, map[string]middleware.ActionLimit{
+		
+		"submit_answer": {Limit: 2, Window: 10 * time.Second},
+		"submit_vote":   {Limit: 3, Window: 10 * time.Second},
+		"emoji_react":   {Limit: 10, Window: 5 * time.Second},
+		"start_game":    {Limit: 1, Window: 10 * time.Second},
+
+		"create_room": {Limit: 3, Window: 10 * time.Second},
+		"get_room":    {Limit: 5, Window: 5 * time.Second},
+	})
 }

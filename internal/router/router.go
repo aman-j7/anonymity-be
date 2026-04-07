@@ -3,20 +3,22 @@ package router
 import (
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chi "github.com/go-chi/chi/v5"
+	chimw "github.com/go-chi/chi/v5/middleware" 
 	"github.com/rs/cors"
 
 	"anonymity/internal/handlers"
+	mw "anonymity/internal/middleware" 
 )
 
-func New(httpHandler *handlers.HTTPHandler, wsHandler *handlers.WSHandler) http.Handler {
+// New returns a chi router with HTTP + WebSocket routes, including rate limiting
+func New(httpHandler *handlers.HTTPHandler, wsHandler *handlers.WSHandler, rateLimiter *mw.RateLimiter) http.Handler {
 	r := chi.NewRouter()
 
-	// Middlewares
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.RealIP)
+	// ---------- Global middlewares ----------
+	r.Use(chimw.Logger)
+	r.Use(chimw.Recoverer)
+	r.Use(chimw.RealIP)
 	r.Use(cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
@@ -24,15 +26,14 @@ func New(httpHandler *handlers.HTTPHandler, wsHandler *handlers.WSHandler) http.
 		AllowCredentials: true,
 	}).Handler)
 
-	// HTTP routes
-	r.Post("/api/rooms", httpHandler.CreateRoom)
-	r.Get("/api/rooms/{code}", httpHandler.GetRoom)
+	
+	r.Post("/api/rooms", mw.HTTPRateLimiter(rateLimiter, "create_room")(httpHandler.CreateRoom))
+	r.Get("/api/rooms/{code}", mw.HTTPRateLimiter(rateLimiter, "get_room")(httpHandler.GetRoom))
 	r.Get("/api/health", httpHandler.Health)
 
-	// WebSocket
+	
 	r.Get("/ws", wsHandler.HandleConnection)
 
-	// Static
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "static/index.html")
 	})
