@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/gorilla/websocket"
 
 	"anonymity/internal/game"
+	"anonymity/internal/middleware"
 	"anonymity/internal/models"
 	"anonymity/internal/store"
 )
@@ -32,10 +34,15 @@ var upgrader = websocket.Upgrader{
 type WSHandler struct {
 	store  *store.GameStore
 	engine *game.Engine
+	rateLimiter *middleware.RateLimiter
 }
 
-func NewWSHandler(s *store.GameStore, e *game.Engine) *WSHandler {
-	return &WSHandler{store: s, engine: e}
+func NewWSHandler(s *store.GameStore, e *game.Engine, rl *middleware.RateLimiter) *WSHandler {
+	return &WSHandler{
+		store:       s,
+		engine:      e,
+		rateLimiter: rl,
+	}
 }
 
 func (h *WSHandler) HandleConnection(w http.ResponseWriter, r *http.Request) {
@@ -264,6 +271,21 @@ func (h *WSHandler) readPump(conn *websocket.Conn, connGen uint64, player *model
 }
 
 func (h *WSHandler) routeMessage(player *models.Player, room *models.Room, msg models.WSMessage) {
+	
+	ctx := context.Background()
+	if msg.Type != "ping" {
+		limited, err := h.rateLimiter.IsLimited(ctx, room.Code, player.ID, msg.Type)
+		if err != nil {
+			game.SendError(player, "RATE_LIMIT_ERROR", "Rate limiter failed")
+			return
+		}
+	
+		if limited {
+			game.SendError(player, "RATE_LIMITED", "Too many requests")
+			return
+		}
+	}
+
 	switch msg.Type {
 	case "start_game":
 		h.engine.HandleStartGame(player, room)
