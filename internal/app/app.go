@@ -7,7 +7,7 @@ import (
 
 	"anonymity/constants"
 	"anonymity/internal/config"
-	"anonymity/internal/es"
+	// "anonymity/internal/es"
 	"anonymity/internal/game"
 	"anonymity/internal/handlers"
 	"anonymity/internal/infra"
@@ -25,12 +25,12 @@ func Run() {
 
 	qs := &questions.ESQuestionService{}
 	qb := questions.NewQuestionBank(qs)
-	esRepository := &es.ESRepository{}
+	// esRepository := &es.ESRepository{}
 
-	mwService := &middleware.MiddlewareService{}
+	// mwService := &middleware.MiddlewareService{}
 
-	openRouter := questions.InitOpenRouter(cfg.OpenRouterApiKey)
-	mwService.CheckQuestionsAvailability(esRepository, openRouter, qs)
+	// openRouter := questions.InitOpenRouter(cfg.OpenRouterApiKey)
+	// mwService.CheckQuestionsAvailability(esRepository, openRouter, qs)
 
 	engine := game.NewEngine(qb)
 
